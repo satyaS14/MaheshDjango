@@ -14,10 +14,12 @@ from django.conf import settings
 
 from .models import *
 import os
+from django.conf import settings
 
 
 def setEnv():
-    f = open('cred.txt', 'r')
+    
+    f = open(os.path.join(settings.BASE_DIR, "wasteManagement", "cred.txt"), "r")
     text = f.read()
     l = text.split()
 
