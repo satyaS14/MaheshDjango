@@ -1,0 +1,595 @@
+{% extends "wasteManagement/base.html" %}
+
+
+{% block body %}
+
+	{% load staticfiles %}
+	<style>
+		/* Always set the map height explicitly to define the size of the div
+		* element that contains the map. */
+		#map {
+			height: 85%;
+			border-left: 1px solid black;
+		}
+		.headingSectionh3{
+			border-bottom: 1px solid white; 
+			margin-bottom:50px !important; 
+			border-bottom-width: thin;
+		}
+		.headingSectionh4{
+			margin-bottom: 25px !important;
+		}
+		#AssignAgentModal, #DataModal, #InfoModal{
+			color: black;
+			cursor: pointer;
+		}
+		html,body{
+			color: white;
+		}
+		.agentListSelected{
+			background-color: grey;
+		}
+		.agentList, .agentListSelected{
+			cursor: pointer;
+		}
+
+		body.loading {
+			overflow: hidden;   
+		}
+
+		body.loading .modal {
+			display: block;
+		}
+
+		.list-group-item{
+			border-radius: 0 !important;
+			padding: 10px 90px 10px 20px;
+		}
+		.list-group a{
+			text-decoration: none !important;
+			color: black;
+		}
+		.list-group{
+			padding: 10px 10px 0px 10px !important;
+		}
+		.infoItem:hover{
+			background-color:lightgrey;
+		}
+
+		.gm-style .gm-style-iw {
+			font-weight: 401;
+			font-size: 14px;
+		}
+
+		#myChart{
+			height: 350px !important;
+			margin-left: -10px !important;
+		}
+		#graphRow{
+			margin-left: 4% !important;
+			margin-right: 4% !important;
+		}
+		.graphLg{
+			width: 70% !important;
+		}
+		@media(max-width: 1000px){
+			.graphLg{
+				width: 80% !important;
+			}	
+		}
+		@media(max-width: 769px){
+			.graphLg{
+				width: 95% !important;
+			}	
+		}
+
+		@media(max-width: 1100px){
+			#mainDiv{
+				margin-left: 10px !important;
+				margin-right: 10px !important;
+			}
+		}
+		@media(max-width: 700px){
+			#mainDiv{
+				margin-left: 7px !important;
+				margin-right: 7px !important;
+			}
+		}
+	</style>
+	
+	{% if userType == "govt" %}	
+
+		
+		<!-- <img id="loading-image" src="{% static 'images/giphy.gif' %}" style="display:none;z-index: 1000; left: auto; right: auto"/> -->
+		
+		
+		<div id="AssignAgentModal" class="modal fade" role="dialog">
+			<div class="modal-dialog modal-lg"  style="left:0% !important">
+		
+			<!-- Modal content-->
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal">&times;</button>
+					<h4 id="agentId">Selected agents: </h4>
+				</div>
+				<div class="modal-body">
+					<ul class="list-group">
+						{% for agent in agents %}
+							<li class="agentList list-group-item" value={{agent}} >{{agent}}</li>
+						{% endfor %}
+					</ul>				
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+					<button type="button" class="btn btn-default" id="assignBtn">Assign</button>
+				</div>
+			</div>
+		
+			</div>
+		</div>
+
+		<div id="InfoModal" class="modal fade" role="dialog">
+			<div class="modal-dialog modal-lg"  style="left:0% !important">
+		
+			<!-- Modal content-->
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal">&times;</button>
+					<h4 id="agentId">Yard Details </h4>
+				</div>
+				<div class="modal-body">
+					
+					<table class="table table-striped" style="color: inherit">
+						<tbody>
+							<tr>
+								<td>Yard Name</td>
+								<td id="yardName"></td>
+							</tr>
+							<tr>
+								<td>Lat</td>
+								<td id="yardLat"></td>
+							</tr>
+							<tr>
+								<td>Lng</td>
+								<td id="yardLng"></td>
+							</tr>
+							<tr>
+								<td>No Of Agent hits</td>
+								<td id="yardHits">0</td>
+							</tr>
+							
+						</tbody>
+					</table>
+					
+					<!-- <h4 id="yardName"></h4>
+					<h4 id="yardLat"></h4>
+					<h4 id="yardLng"></h4>
+					<h4 id="yardActivity"></h4> -->
+				
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+				</div>
+			</div>
+		
+			</div>
+		</div>
+
+		<div id="DataModal" class="modal fade" role="dialog">
+			<div class="modal-dialog modal-lg graphLg"  style="left:0% !important;">
+		
+			<!-- Modal content-->
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal">&times;</button>
+					<h4 id="agentId">Yard Data</h4>
+				</div>
+				
+				<div class="modal-body" style="padding: 0">
+					<div class="row" id="graphRow">
+						
+						<!-- <div class="col-md-offset-1 col-md-10 col-sm-offset-1 col-sm-10 col-xs-offset-1 col-xs-10"> -->
+							<canvas id="myChart"></canvas>
+						<!-- </div> -->
+								
+					</div>
+				</div>
+				
+				<div class="modal-footer">
+					<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+				</div>
+			</div>
+		
+			</div>
+		</div>
+		
+		<div class="row" id="mainDiv" style="margin-top: 20px; margin-left: 20px; margin-right: 20px">
+			<!-- <div class="col-lg-9 col-md-9 col-sm-12 col-xs-12"> -->
+				<div id="map"></div>
+			<!-- </div> -->
+			<!-- <div class="col-lg-3 col-md-3 col-sm-12 col-xs-12" style="padding-left: 45px">
+				<div id="SelectedMarkerArea">
+					
+					<div id="headingSection" style="border-bottom: 1px solid black">
+						<h3 class='headingSectionh3'>Select a marker to view data</h3>
+					</div>
+					
+					<div id="infoSection"></div>
+
+				</div>
+			</div> -->
+			
+		</div>
+		
+		<script type="text/javascript">
+
+			var markers = [];
+			var selectedAgents = "";
+			var selectedDumpYard = "";
+
+			$(document).ready(function() {
+				selectedAgents = "";
+				selectedDumpYard = "";
+			});
+
+			/* Click on agent */
+			$(".agentList").click(function(){
+				
+				var tmp = "";
+				var found = 0;
+				var agentsArr = selectedAgents.split(",");
+				selectedAgents = "";
+
+				for(var i=0; i<agentsArr.length-1; i++){
+					if(agentsArr[i] == this.value){
+						found = 1;
+					}else{
+						tmp += agentsArr[i] + ",";
+					}
+				}
+
+				if(found){
+					selectedAgents = tmp;
+				} else{
+					if(tmp){
+						selectedAgents += tmp;
+					}
+					selectedAgents += this.value + ",";
+				}
+				
+				this.classList.toggle("agentListSelected");
+				
+				/* Sorting array */
+				agentsArr = selectedAgents.split(",");
+				agentsArr.sort();
+				selectedAgents = "";
+				// console.log(agentsArr);
+				
+				for(var i=1; i<agentsArr.length; i++){
+					selectedAgents += agentsArr[i] + ",";
+				}
+
+				$("#agentId").html("Selected agents: " + selectedAgents.substring(0, selectedAgents.length-1));
+			});
+
+			/* Click on assign */
+			$("#assignBtn").click(function(){
+				$.ajax({
+					type: "POST",
+					url: '{% url "assignAgents" %}',
+					data: {
+						'agentsList': selectedAgents,
+						'yard': selectedDumpYard
+					},
+					beforeSend: function(){
+						$("#AssignAgentModal").modal("hide");
+						$("#mainDiv").hide();
+						// $("#loading-image").show();
+					},
+					success: function (data) {
+						// $("#loading-image").hide();
+						$("#mainDiv").show();
+						alert(data);
+					}
+				});
+
+				$(".agentListSelected").addClass("agentList").removeClass("agentListSelected");
+				selectedAgents = "";
+				$("#agentId").html("Selected agents: ");
+				
+			});
+
+			// function markerClick(lat, lng, title){
+			// 	// console.log(lat);
+			// 	// console.log(lng);
+
+			// 	$("#headingSection").html(
+			// 		"<h3 class='headingSectionh3'>"+title+"</h3>"
+			// 	);
+
+			// 	$("#infoSection").html(
+			// 		"<h4 class='headingSectionh4'>Lat: "+lat+"</h4>"+
+			// 		"<h4 class='headingSectionh4'>Lng: "+lng+"</h4>"+
+			// 		"<a data-toggle='modal' data-target='#AssignAgentModal'>"+
+			// 			"<button type='button' class='btn btn-default'>Assign Agents</button>"+
+			// 		"</a>"
+			// 	);
+
+			// 	selectedDumpYard = title;
+			// }
+
+			function initMap() {
+
+				markers = [
+					{% for dump in dumpYards %}
+						{
+							"title": '{{dump.name}}',
+							"lat": '{{dump.lat}}',
+							"lng": '{{dump.lng}}',
+							"description": '{{dump.name}}',
+							"condition": '{{dump.severity}}',
+							"id": '{{dump.pk}}'
+						} {% if not forloop.last %},{% endif %}
+					{% endfor %}
+				];//some array
+
+				var map = new google.maps.Map(document.getElementById('map'), {
+					center: new google.maps.LatLng(markers[0].lat, markers[0].lng),
+					/*styles: [
+						{elementType: 'geometry', stylers: [{color: '#242f3e'}]},
+						{elementType: 'labels.text.stroke', stylers: [{color: '#242f3e'}]},
+						{elementType: 'labels.text.fill', stylers: [{color: '#746855'}]},
+						{
+						featureType: 'administrative.locality',
+						elementType: 'labels.text.fill',
+						stylers: [{color: '#d59563'}]
+						},
+						{
+						featureType: 'poi',
+						elementType: 'labels.text.fill',
+						stylers: [{color: '#d59563'}]
+						},
+						{
+						featureType: 'poi.park',
+						elementType: 'geometry',
+						stylers: [{color: '#263c3f'}]
+						},
+						{
+						featureType: 'poi.park',
+						elementType: 'labels.text.fill',
+						stylers: [{color: '#6b9a76'}]
+						},
+						{
+						featureType: 'road',
+						elementType: 'geometry',
+						stylers: [{color: '#38414e'}]
+						},
+						{
+						featureType: 'road',
+						elementType: 'geometry.stroke',
+						stylers: [{color: '#212a37'}]
+						},
+						{
+						featureType: 'road',
+						elementType: 'labels.text.fill',
+						stylers: [{color: '#9ca5b3'}]
+						},
+						{
+						featureType: 'road.highway',
+						elementType: 'geometry',
+						stylers: [{color: '#746855'}]
+						},
+						{
+						featureType: 'road.highway',
+						elementType: 'geometry.stroke',
+						stylers: [{color: '#1f2835'}]
+						},
+						{
+						featureType: 'road.highway',
+						elementType: 'labels.text.fill',
+						stylers: [{color: '#f3d19c'}]
+						},
+						{
+						featureType: 'transit',
+						elementType: 'geometry',
+						stylers: [{color: '#2f3948'}]
+						},
+						{
+						featureType: 'transit.station',
+						elementType: 'labels.text.fill',
+						stylers: [{color: '#d59563'}]
+						},
+						{
+						featureType: 'water',
+						elementType: 'geometry',
+						stylers: [{color: '#17263c'}]
+						},
+						{
+						featureType: 'water',
+						elementType: 'labels.text.fill',
+						stylers: [{color: '#515c6d'}]
+						},
+						{
+						featureType: 'water',
+						elementType: 'labels.text.stroke',
+						stylers: [{color: '#17263c'}]
+						}
+					]*/
+				});
+
+				var bounds = new google.maps.LatLngBounds();
+				var infoWindow = new google.maps.InfoWindow();
+
+				for (var i = 0; i < markers.length; i++) {
+					
+					var data = markers[i];
+					var myLatlng = new google.maps.LatLng(data.lat, data.lng);
+					
+					var icon;
+					
+					if(data.condition == 0)
+						icon = "{% static 'images/location.png' %}";
+					else
+						icon = "{% static 'images/bad.png' %}";
+					
+					var marker = new google.maps.Marker({
+						position: myLatlng,
+						map: map,
+						title: data.title,
+						icon: icon
+					
+					});
+			
+					var content = '<ul class="list-group">'+
+					'<a data-toggle="modal" data-target="#InfoModal" onclick="LoadInfo('+data.id+')"><li class="agentList list-group-item infoItem">Get Info</li></a>'+
+					'<a data-toggle="modal" data-target="#DataModal" onclick="LoadData('+data.id+')"><li class="agentList list-group-item infoItem">View data</li></a>'+
+					'<a data-toggle="modal" data-target="#AssignAgentModal"><li class="agentList list-group-item infoItem">Assign Agents</li></a>'+
+					'</ul>';
+					
+					/* Marker click event listener */
+					google.maps.event.addListener(marker, 'click', (function(marker, infoWindow, content){
+						// markerClick(this.position.lat(), this.position.lng(), this.title);
+						
+						selectedDumpYard = marker.title;
+						
+						return function(){
+							infoWindow.setContent(content);
+							infoWindow.open(map, marker);
+						};
+						
+					})(marker, infoWindow, content));
+
+					bounds.extend(marker.position);
+				}
+
+				google.maps.event.addListener(map, "click", function(event) {
+					infoWindow.close();
+				});
+
+				map.setCenter(bounds.getCenter());
+				map.fitBounds(bounds);
+			}
+
+			function LoadData(dataId){
+				console.log(dataId);
+			}
+
+			function LoadInfo(dataId){
+				console.log(dataId);
+
+				for (var i = 0; i < markers.length; i++) {
+
+					var data = markers[i];
+					if(data.id == dataId){
+
+						$("#yardName").text(data.title);
+						$("#yardLat").text(data.lat);
+						$("#yardLng").text(data.lng);
+						// $("#yardActivity").text("No Of agent hits: 0");
+						
+						break;
+					}
+
+				}
+			}
+
+		</script>
+		<script async defer src="https://maps.googleapis.com/maps/api/js?key={{API_KEY}}&callback=initMap"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.6.0/Chart.min.js"></script>
+						
+		<script>
+		
+			// Line graph
+			var chart = new Chart(document.getElementById("myChart"), {
+				type: 'line',
+	
+				data: {
+				
+					labels: ["1", "2", "3", "4", "5", "6", "7", "1", "2", "3", "4", "5", "6", "7"],
+				
+					datasets: [{ 
+						data: [3, 5, 4, 7, 4, 0, 5, 3, 5, 4, 7, 4, 0, 5],
+						label: "Temperature",
+						borderColor: "#3e95cd",
+						// fill: false
+					}]
+				},
+			  
+				options: {
+	
+					responsive: true,
+					maintainAspectRatio: false,
+	
+					title: {
+						display: true,
+						text: 'Progressive Waste Connections'
+					},
+					tooltips: {
+						  mode: 'index',
+						  intersect: true
+					},
+					annotation: {
+						  annotations: [{
+							type: 'line',
+							mode: 'horizontal',
+							scaleID: 'y-axis-0',
+							value: 2,//{{cpu_threshold}},
+							borderColor: 'red',
+							borderWidth: 4,
+							label: {
+							  enabled: false,
+							  content: 'C'
+							   }
+						  }]
+					},
+	
+					scales: {
+						xAxes: [{
+							scaleLabel: {
+								display: true,
+								labelString: 'Time'
+							}
+						}],
+						yAxes: [{
+							scaleLabel: {
+								display: true,
+								labelString: ''
+							}
+						}]
+					}
+				}
+	
+			});	
+			
+	
+			function addData(){
+				
+				// x = chart.data.datasets[0].data.length;
+				
+				// chart.data.datasets[0].data = [50, 30];
+				// chart.data.labels[0] = "New";
+				// chart.update();
+	
+				// chart_2.data.datasets[0].data = [1000, 1000, 1000];
+				// chart_2.update();
+			}
+	
+			setInterval(function(){
+				addData();
+			}, 5000);
+		
+		
+		</script>
+
+
+		
+
+	{% else %}
+	
+		<div class="row" style="margin-top: 100px; margin-left: 100px; margin-right: 20px">
+			<h3>Your Score: {{ score }}</h3>
+		</div>
+
+		
+	{% endif %}
+{% endblock body %}

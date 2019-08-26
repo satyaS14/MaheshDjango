@@ -1,0 +1,69 @@
+{% include "wasteManagement/base.html" %}
+
+{% block body %}
+
+    <style>
+        ::placeholder {
+            color: rgba(0, 0, 0, 0.65) !important;
+        }
+
+        #loginDiv{
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 10px 30px 15px 30px;
+            margin-top: 50px;
+        }
+        .form-group{
+            margin-bottom: 0;
+        }
+        #loginSubmit{
+            margin-top: 40px;
+        }
+        .form-control{
+            border: none;
+            border-radius: 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+            background-color: transparent;
+            color: black;
+            margin-top: 30px;
+        }
+        .form-control:focus{
+
+            -webkit-box-shadow: 0 4px 6px -7px white;
+            -moz-box-shadow: 0 4px 6px -7px white;
+            box-shadow: 0 4px 6px -7px white;
+
+            border-bottom: 1px solid white;
+        }
+        
+    </style>
+    
+	<div class="row">
+    
+        <div id="loginDiv" class="col-md-offset-4 col-md-4 col-sm-offset-3 col-sm-6 col-xs-offset-1 col-xs-10">
+            
+            <h3 style="color: black;">LogIn</h3>
+            {% if error_message %}
+            
+                <div class="alert alert-danger error_message" style="margin-top: 35px">
+                    {{ error_message }}
+                </div>
+            
+            {% endif %}
+
+
+            <form action="{% url 'userLogin' %}" method="POST" autocomplete="off">
+                {% csrf_token %}
+                <div class="form-group">
+                    <input type="text" name="username2" placeholder="Your Username" required class="form-control" />
+                </div>
+            
+                <div class="form-group">
+                    <input type="password" name="pass" placeholder="Your Password" required class="form-control" />
+                </div>
+            
+                <button type="submit" id="loginSubmit" class="btn btn-default">Submit</button>
+            </form>
+        </div>
+    </div>
+
+{% endblock body %}
