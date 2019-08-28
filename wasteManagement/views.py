@@ -15,6 +15,7 @@ from django.conf import settings
 from .models import *
 import os
 from django.conf import settings
+# from django.contrib.gis.geoip  import GeoIP
 
 
 def setEnv():
@@ -48,6 +49,12 @@ def userLogin(request):
     template_name = 'wasteManagement/login.html'
 
     setEnv()
+
+    # g = GeoIP()
+    # ip = request.META.get('REMOTE_ADDR', None)
+    # if ip:
+    #     city = g.city(ip)['city']
+    #     print "\n\n\n"+str(city)+"\n\n\n"
 
     if request.method == "POST":
 
